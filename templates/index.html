@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор проектов</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+        .sidebar {
+            width: 300px;
+            background-color: #f0f0f0;
+            padding: 20px;
+            height: 100vh;
+            overflow-y: auto;
+            border-right: 1px solid #ddd;
+        }
+        .main-content {
+            flex: 1;
+            padding: 30px;
+        }
+        .container {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .question-label {
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+            min-height: 50px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 8px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            color: #28a745;
+            font-weight: bold;
+        }
+        /* Обновленные стили для дерева проектов */
+        .tree {
+            list-style: none;
+            padding-left: 0;
+        }
+        .project-item {
+            margin-bottom: 5px;
+        }
+        details {
+            margin-bottom: 10px;
+        }
+        summary {
+            cursor: pointer;
+            padding: 8px;
+            background-color: #fff;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            position: relative;
+            list-style: none;
+        }
+        summary::-webkit-details-marker {
+            display: none;
+        }
+        summary::before {
+            content: '▶';
+            position: absolute;
+            left: -15px;
+            transform: rotate(0);
+            transition: transform 0.2s;
+        }
+        details[open] > summary::before {
+            transform: rotate(90deg);
+        }
+        .project-details {
+            margin-left: 20px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        .project-item-label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .project-item-value {
+            color: #333;
+            font-weight: 500;
+        }
+        /* Стили для контекстного меню */
+        .context-menu {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            padding: 5px 0;
+            z-index: 1000;
+        }
+        .context-menu-item {
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+        .context-menu-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        /* Стили для редактируемых значений */
+        .editable {
+            cursor: pointer;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .editable:hover {
+            background-color: #f0f0f0;
+        }
+        .editing {
+            background-color: white;
+            border: 1px solid #007bff;
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+        .project-header {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .project-db-name {
+            font-size: 10px;
+            color: #999;
+            margin-top: 2px;
+        }
+        
+        .project-display-name {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Контекстное меню -->
+    <div id="contextMenu" class="context-menu">
+        <div class="context-menu-item" onclick="renameProject()">Переименовать</div>
+        <div class="context-menu-item" onclick="deleteProject()">Удалить</div>
+    </div>
+
+    <div class="sidebar">
+        <h2>Проекты</h2>
+        <div class="tree">
+            {% for project in projects %}
+            <details data-project="{{ project.project_name }}" oncontextmenu="showContextMenu(event, '{{ project.project_name }}')">
+                <summary>
+                    <div class="project-header">
+                        <span class="project-display-name">{{ project.display_name }}</span>
+                        <span class="project-db-name">{{ project.project_name }}.db</span>
+                    </div>
+                </summary>
+                <div class="project-details">
+                    <div class="project-item-label">
+                        <span>Расстояние:</span>
+                        <span class="project-item-value editable" 
+                              ondblclick="makeEditable(this, '{{ project.project_name }}', 'distance')"
+                              data-value="{{ project.distance }}"
+                              data-field="distance">
+                            {{ project.distance if project.distance else 'Не указано' }} км
+                        </span>
+                    </div>
+                    <div class="project-item-label">
+                        <span>Стоимость за км:</span>
+                        <span class="project-item-value editable"
+                              ondblclick="makeEditable(this, '{{ project.project_name }}', 'cost_per_km')"
+                              data-value="{{ project.cost_per_km }}"
+                              data-field="cost_per_km">
+                            {{ project.cost_per_km if project.cost_per_km else 'Не указано' }} руб
+                        </span>
+                    </div>
+                    <div class="project-item-label">
+                        <span>Общая стоимость:</span>
+                        <span class="project-item-value total-cost">
+                            {{ project.total_cost if project.total_cost else 'Не указано' }} руб
+                        </span>
+                    </div>
+                </div>
+            </details>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="container">
+            <div class="question-label">
+                {% if result %}
+                    <span class="result">{{ result }}</span>
+                {% else %}
+                    {{ current_question }}
+                {% endif %}
+            </div>
+            <form action="{{ url_for('submit') }}" method="post">
+                <input type="hidden" name="current_question" value="{{ current_question }}">
+                <div class="input-group">
+                    <input type="text" name="input_field" required>
+                    <button type="submit">Ввод</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let selectedProject = null;
+        
+        // Обработка контекстного меню
+        document.addEventListener('click', function() {
+            document.getElementById('contextMenu').style.display = 'none';
+        });
+
+        function showContextMenu(event, projectName) {
+            event.preventDefault();
+            selectedProject = projectName;
+            const menu = document.getElementById('contextMenu');
+            menu.style.display = 'block';
+            menu.style.left = event.pageX + 'px';
+            menu.style.top = event.pageY + 'px';
+        }
+
+        function deleteProject() {
+            if (selectedProject) {
+                fetch('/delete_project', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({project_name: selectedProject})
+                }).then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    }
+                });
+            }
+        }
+
+        // Редактирование значений
+        function makeEditable(element, projectName, field) {
+            const currentValue = element.dataset.value;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentValue;
+            input.className = 'editing';
+            
+            input.onblur = function() {
+                updateValue(projectName, field, this.value, element);
+            };
+            
+            input.onkeydown = function(e) {
+                if (e.key === 'Enter') {
+                    updateValue(projectName, field, this.value, element);
+                }
+            };
+            
+            element.innerHTML = '';
+            element.appendChild(input);
+            input.focus();
+        }
+
+        function updateValue(projectName, field, value, element) {
+            fetch('/update_project', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    project_name: projectName,
+                    field: field,
+                    value: value
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Обновляем значения на странице
+                    const projectDetails = element.closest('.project-details');
+                    
+                    // Обновляем расстояние
+                    const distanceElement = projectDetails.querySelector('[data-field="distance"]');
+                    if (distanceElement) {
+                        distanceElement.textContent = `${data.data.distance} км`;
+                        distanceElement.dataset.value = data.data.distance;
+                    }
+                    
+                    // Обновляем стоимость за км
+                    const costPerKmElement = projectDetails.querySelector('[data-field="cost_per_km"]');
+                    if (costPerKmElement) {
+                        costPerKmElement.textContent = `${data.data.cost_per_km} руб`;
+                        costPerKmElement.dataset.value = data.data.cost_per_km;
+                    }
+                    
+                    // Обновляем общую стоимость
+                    const totalCostElement = projectDetails.querySelector('.total-cost');
+                    if (totalCostElement) {
+                        totalCostElement.textContent = `${data.data.total_cost} руб`;
+                    }
+                } else {
+                    alert('Ошибка при обновлении данных');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ошибка при обновлении данных');
+            });
+        }
+
+        function renameProject() {
+            if (selectedProject) {
+                const newName = prompt('Введите новое имя проекта:');
+                if (newName) {
+                    fetch('/rename_project', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            project_name: selectedProject,
+                            new_name: newName
+                        })
+                    }).then(response => {
+                        if (response.ok) {
+                            location.reload();
+                        }
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
