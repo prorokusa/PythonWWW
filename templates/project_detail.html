@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.display_name }}{% endblock %}
+
+{% block content %}
+<div class="project-detail-container">
+    <div class="project-header">
+        <div class="header-content">
+            <h1>{{ project.display_name }}</h1>
+            <span class="project-status {{ project.status }}">
+                {{ 'В процессе' if project.status == 'active' else 'Завершено' }}
+            </span>
+        </div>
+        <div class="header-actions">
+            <button class="btn-primary" onclick="addObject()">
+                <i class="fas fa-plus"></i> Добавить объект
+            </button>
+            <button class="btn-secondary" onclick="location.href='{{ url_for('edit_project', project_name=project.project_name) }}'">
+                <i class="fas fa-edit"></i> Редактировать
+            </button>
+        </div>
+    </div>
+
+    <div class="project-content">
+        <!-- Информация о проекте -->
+        <div class="info-section">
+            <h2>Информация о заказчике</h2>
+            <div class="info-grid">
+                {% if project.client_type == 'individual' %}
+                    <div class="info-item">
+                        <label>ФИО:</label>
+                        <span>{{ project.client_name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Паспортные данные:</label>
+                        <span>{{ project.client_passport }}</span>
+                    </div>
+                {% else %}
+                    <div class="info-item">
+                        <label>Организация:</label>
+                        <span>{{ project.company_name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>ИНН:</label>
+                        <span>{{ project.company_inn }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>ОГРН:</label>
+                        <span>{{ project.company_ogrn }}</span>
+                    </div>
+                {% endif %}
+                <div class="info-item">
+                    <label>Телефон:</label>
+                    <span>{{ project.client_phone }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Email:</label>
+                    <span>{{ project.client_email }}</span>
+                </div>
+                <div class="info-item full-width">
+                    <label>Адрес:</label>
+                    <span>{{ project.client_address }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Список объектов -->
+        <div class="objects-section">
+            <h2>Объекты</h2>
+            <div class="objects-list">
+                {% if project.objects_count == 0 %}
+                    <div class="empty-state">
+                        <i class="far fa-folder-open"></i>
+                        <p>В проекте пока нет объектов</p>
+                        <button class="btn-primary" onclick="addObject()">Добавить объект</button>
+                    </div>
+                {% else %}
+                    <!-- Здесь будет список объектов -->
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Чат-подобный интерфейс -->
+        <div class="chat-interface">
+            <h2>Диалог</h2>
+            <div class="chat-messages" id="chatMessages">
+                <!-- Здесь будут сообщения -->
+            </div>
+            <div class="chat-input">
+                <input type="text" id="userInput" placeholder="Введите ответ...">
+                <button onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+                <button onclick="uploadFile()">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .project-detail-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .project-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .header-content h1 {
+        margin: 0;
+        margin-bottom: 0.5rem;
+    }
+
+    .project-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+    }
+
+    .project-status.active {
+        background-color: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .project-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+
+    .info-section,
+    .objects-section,
+    .chat-interface {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .info-item.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .info-item label {
+        display: block;
+        font-weight: bold;
+        color: #666;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #666;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .chat-interface {
+        grid-column: 1 / -1;
+    }
+
+    .chat-messages {
+        height: 400px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .chat-input {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .chat-input input {
+        flex: 1;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .chat-input button {
+        padding: 0.5rem 1rem;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    /* Стили для объектов */
+    .object-card {
+        background: white;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .object-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .object-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+    }
+
+    .object-status.active {
+        background-color: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .object-status.completed {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .object-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    /* Стили для чата */
+    .message {
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        border-radius: 4px;
+    }
+
+    .message.user {
+        background-color: #e3f2fd;
+        margin-left: 2rem;
+    }
+
+    .message.system {
+        background-color: #f5f5f5;
+        margin-right: 2rem;
+    }
+
+    .message.file {
+        background-color: #e8f5e9;
+        margin-right: 2rem;
+    }
+
+    .message-time {
+        font-size: 0.75rem;
+        color: #666;
+        margin-top: 0.25rem;
+    }
+
+    .chat-input button:hover {
+        background-color: #0056b3;
+    }
+</style>
+
+<script>
+let selectedObjectId = null;
+
+// Загрузка объектов при открытии страницы
+document.addEventListener('DOMContentLoaded', function() {
+    loadObjects();
+});
+
+// Функция загрузки объектов проекта
+function loadObjects() {
+    fetch(`/project/{{ project.project_name }}/objects`)
+        .then(response => response.json())
+        .then(data => {
+            const objectsList = document.querySelector('.objects-list');
+            if (data.objects && data.objects.length > 0) {
+                objectsList.innerHTML = data.objects.map(obj => `
+                    <div class="object-card" data-id="${obj.id}">
+                        <div class="object-header">
+                            <h3>${obj.name}</h3>
+                            <span class="object-status ${obj.status}">
+                                ${obj.status === 'active' ? 'В процессе' : 'Завершено'}
+                            </span>
+                        </div>
+                        <div class="object-actions">
+                            <button onclick="viewObjectChat(${obj.id}, '${obj.name}')">
+                                <i class="far fa-comments"></i> Чат
+                            </button>
+                            <button onclick="toggleObjectStatus(${obj.id}, '${obj.status}')">
+                                <i class="fas fa-check-circle"></i> 
+                                ${obj.status === 'active' ? 'Завершить' : 'Возобновить'}
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        });
+}
+
+// Функция добавления нового объекта
+function addObject() {
+    const objectName = prompt('Введите название объекта:');
+    if (objectName) {
+        const formData = new FormData();
+        formData.append('object_name', objectName);
+        
+        fetch(`/project/{{ project.project_name }}/objects`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadObjects();
+            } else {
+                alert(data.error || 'Ошибка при создании объекта');
+            }
+        });
+    }
+}
+
+// Функция просмотра чата объекта
+function viewObjectChat(objectId, objectName) {
+    selectedObjectId = objectId;
+    document.querySelector('.chat-interface h2').textContent = `Диалог: ${objectName}`;
+    loadChatMessages(objectId);
+}
+
+// Загрузка сообщений чата
+function loadChatMessages(objectId) {
+    fetch(`/project/{{ project.project_name }}/object/${objectId}/chat`)
+        .then(response => response.json())
+        .then(data => {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = data.messages.map(msg => `
+                <div class="message ${msg.message_type}">
+                    <div class="message-content">${msg.content}</div>
+                    <div class="message-time">${new Date(msg.created_at).toLocaleString()}</div>
+                </div>
+            `).join('');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+}
+
+// Отправка сообщения
+function sendMessage() {
+    if (!selectedObjectId) {
+        alert('Выберите объект для отправки сообщения');
+        return;
+    }
+
+    const input = document.getElementById('userInput');
+    const message = input.value.trim();
+    if (message) {
+        const formData = new FormData();
+        formData.append('message', message);
+        formData.append('type', 'user');
+        
+        fetch(`/project/{{ project.project_name }}/object/${selectedObjectId}/chat`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                input.value = '';
+                loadChatMessages(selectedObjectId);
+            }
+        });
+    }
+}
+
+// Загрузка файла
+function uploadFile() {
+    if (!selectedObjectId) {
+        alert('Выберите объект для загрузки файла');
+        return;
+    }
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.onchange = function() {
+        const file = input.files[0];
+        if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            fetch(`/project/{{ project.project_name }}/object/${selectedObjectId}/upload`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadChatMessages(selectedObjectId);
+                } else {
+                    alert(data.error || 'Ошибка при загрузке файла');
+                }
+            });
+        }
+    };
+    input.click();
+}
+
+// Изменение статуса объекта
+function toggleObjectStatus(objectId, currentStatus) {
+    const newStatus = currentStatus === 'active' ? 'completed' : 'active';
+    const formData = new FormData();
+    formData.append('status', newStatus);
+    
+    fetch(`/project/{{ project.project_name }}/object/${objectId}/status`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadObjects();
+        } else {
+            alert(data.error || 'Ошибка при изменении статуса');
+        }
+    });
+}
+</script>
+{% endblock %} 

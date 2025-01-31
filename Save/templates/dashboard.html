@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Личный кабинет{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h2>Добро пожаловать, {{ current_user.username }}!</h2>
+    </div>
+
+    <div class="dashboard-content">
+        <div class="projects-sidebar">
+            <h3>Мои проекты</h3>
+            <div class="tree">
+                {% for project in projects %}
+                <details data-project="{{ project.project_name }}" oncontextmenu="showContextMenu(event, '{{ project.project_name }}'); return false;">
+                    <summary>
+                        <div class="project-header">
+                            <span class="project-display-name">{{ project.display_name }}</span>
+                            <span class="project-db-name">{{ project.project_name }}.db</span>
+                        </div>
+                    </summary>
+                    <div class="project-details">
+                        <div class="project-item-label">
+                            <span>Расстояние:</span>
+                            <span class="project-item-value editable" 
+                                  ondblclick="makeEditable(this, '{{ project.project_name }}', 'distance')"
+                                  data-value="{{ project.distance }}"
+                                  data-field="distance">
+                                {{ project.distance if project.distance else 'Не указано' }} км
+                            </span>
+                        </div>
+                        <div class="project-item-label">
+                            <span>Стоимость за км:</span>
+                            <span class="project-item-value editable"
+                                  ondblclick="makeEditable(this, '{{ project.project_name }}', 'cost_per_km')"
+                                  data-value="{{ project.cost_per_km }}"
+                                  data-field="cost_per_km">
+                                {{ project.cost_per_km if project.cost_per_km else 'Не указано' }} руб
+                            </span>
+                        </div>
+                        <div class="project-item-label">
+                            <span>Общая стоимость:</span>
+                            <span class="project-item-value total-cost">
+                                {{ project.total_cost if project.total_cost else 'Не указано' }} руб
+                            </span>
+                        </div>
+                    </div>
+                </details>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="container">
+                <div class="question-label">
+                    {% if result %}
+                        <span class="result">{{ result }}</span>
+                    {% else %}
+                        {{ current_question }}
+                    {% endif %}
+                </div>
+                <form action="{{ url_for('submit') }}" method="post">
+                    <input type="hidden" name="current_question" value="{{ current_question }}">
+                    <div class="input-group">
+                        <input type="text" name="input_field" required>
+                        <button type="submit" class="btn-submit">Ввод</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Контекстное меню -->
+<div id="contextMenu" class="context-menu">
+    <div class="context-menu-item" onclick="renameProject()">Переименовать</div>
+    <div class="context-menu-item" onclick="deleteProject()">Удалить</div>
+</div>
+
+<!-- Добавим стили для личного кабинета -->
+<style>
+    .dashboard-container {
+        padding: 20px;
+    }
+
+    .dashboard-header {
+        margin-bottom: 2rem;
+    }
+
+    .dashboard-content {
+        display: flex;
+        gap: 2rem;
+    }
+
+    .projects-sidebar {
+        width: 300px;
+        background-color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .main-content {
+        flex: 1;
+    }
+
+    .container {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .tree details {
+        margin-bottom: 0.5rem;
+    }
+
+    .project-header {
+        padding: 0.5rem;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+    }
+
+    .project-display-name {
+        display: block;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .project-db-name {
+        display: block;
+        font-size: 0.8rem;
+        color: #666;
+    }
+
+    .project-details {
+        margin-left: 1rem;
+        padding: 0.5rem;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+    }
+
+    .editable:hover {
+        background-color: #e9ecef;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+
+    .input-group {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .input-group input {
+        flex: 1;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .context-menu {
+        display: none;
+        position: fixed;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        padding: 5px 0;
+        min-width: 150px;
+        z-index: 1000;
+    }
+
+    .context-menu-item {
+        padding: 8px 15px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .context-menu-item:hover {
+        background-color: #f0f0f0;
+    }
+</style>
+
+<script>
+    let selectedProject = null;
+    const contextMenu = document.getElementById('contextMenu');
+
+    // Показать контекстное меню
+    function showContextMenu(event, projectName) {
+        event.preventDefault();
+        selectedProject = projectName;
+        
+        contextMenu.style.display = 'block';
+        contextMenu.style.left = event.pageX + 'px';
+        contextMenu.style.top = event.pageY + 'px';
+    }
+
+    // Скрыть контекстное меню при клике вне его
+    document.addEventListener('click', function(event) {
+        if (!contextMenu.contains(event.target)) {
+            contextMenu.style.display = 'none';
+        }
+    });
+
+    // Предотвратить появление стандартного контекстного меню
+    document.addEventListener('contextmenu', function(event) {
+        if (event.target.closest('.tree')) {
+            event.preventDefault();
+        }
+    });
+
+    // Функция переименования проекта
+    function renameProject() {
+        if (selectedProject) {
+            const newName = prompt('Введите новое имя проекта:');
+            if (newName) {
+                fetch('/rename_project', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        project_name: selectedProject,
+                        new_name: newName
+                    })
+                }).then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    }
+                });
+            }
+        }
+        contextMenu.style.display = 'none';
+    }
+
+    // Функция удаления проекта
+    function deleteProject() {
+        if (selectedProject && confirm('Вы уверены, что хотите удалить проект?')) {
+            fetch('/delete_project', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    project_name: selectedProject
+                })
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            });
+        }
+        contextMenu.style.display = 'none';
+    }
+</script>
+{% endblock %} 

@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Настройка профиля{% endblock %}
+
+{% block content %}
+<div class="setup-container">
+    <h1>Настройка профиля</h1>
+    
+    <form method="POST" action="{{ url_for('auth.setup_profile') }}" class="setup-form">
+        <!-- Блок 1: Сведения о кадастровом инженере -->
+        <div class="setup-section">
+            <h2>Сведения о кадастровом инженере</h2>
+            <div class="form-group">
+                <label for="full_name">ФИО:</label>
+                <input type="text" id="full_name" name="full_name" value="{{ current_user.full_name }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="snils">СНИЛС:</label>
+                <input type="text" id="snils" name="snils" value="{{ current_user.snils }}" 
+                       pattern="\d{3}-\d{3}-\d{3} \d{2}" placeholder="123-456-789 01" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="registration_number">Регистрационный номер:</label>
+                <input type="text" id="registration_number" name="registration_number" 
+                       value="{{ current_user.registration_number }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="sro_membership">Членство в СРО:</label>
+                <input type="text" id="sro_membership" name="sro_membership" 
+                       value="{{ current_user.sro_membership }}" required>
+            </div>
+        </div>
+
+        <!-- Блок 2: Сведения об организации -->
+        <div class="setup-section">
+            <h2>Сведения об организации</h2>
+            <div class="form-group">
+                <label for="organization_name">Название организации:</label>
+                <input type="text" id="organization_name" name="organization_name" 
+                       value="{{ current_user.organization_name }}" required>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group half">
+                    <label for="organization_inn">ИНН:</label>
+                    <input type="text" id="organization_inn" name="organization_inn" 
+                           value="{{ current_user.organization_inn }}" required>
+                </div>
+                
+                <div class="form-group half">
+                    <label for="organization_ogrn">ОГРН:</label>
+                    <input type="text" id="organization_ogrn" name="organization_ogrn" 
+                           value="{{ current_user.organization_ogrn }}" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="organization_address">Адрес организации:</label>
+                <textarea id="organization_address" name="organization_address" rows="2" required>{{ current_user.organization_address }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="organization_contact">Контактные данные:</label>
+                <textarea id="organization_contact" name="organization_contact" rows="2" required>{{ current_user.organization_contact }}</textarea>
+            </div>
+        </div>
+
+        <!-- Блок 3: Сведения о средствах измерения -->
+        <div class="setup-section">
+            <h2>Сведения о средствах измерения</h2>
+            <div class="form-group">
+                <label for="device_type">Тип прибора:</label>
+                <input type="text" id="device_type" name="device_type" 
+                       value="{{ current_user.device_type }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="device_serial">Заводской номер:</label>
+                <input type="text" id="device_serial" name="device_serial" 
+                       value="{{ current_user.device_serial }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="device_verification_date">Срок действия поверки:</label>
+                <input type="date" id="device_verification_date" name="device_verification_date" 
+                       value="{{ current_user.device_verification_date }}" required>
+            </div>
+        </div>
+
+        <!-- Блок 4: Загрузка файла -->
+        <div class="setup-section">
+            <h2>Загрузка документа (необязательно)</h2>
+            <div class="form-group">
+                <label for="document">Загрузить межевой или технический план:</label>
+                <input type="file" id="document" name="document" accept=".xml,.pdf">
+                <small class="form-text">Загрузите файл для автоматического заполнения данных</small>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">Сохранить данные</button>
+            <button type="button" class="btn-secondary" onclick="skipSetup()">Пропустить</button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .setup-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+    }
+
+    .setup-section {
+        background: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .setup-section h2 {
+        color: #333;
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .form-group.half {
+        flex: 1;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+        color: #555;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+
+    .form-group textarea {
+        resize: vertical;
+    }
+
+    .form-text {
+        font-size: 0.875rem;
+        color: #666;
+        margin-top: 0.25rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        padding: 0.75rem 2rem;
+        border-radius: 4px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+
+    .btn-secondary {
+        background-color: transparent;
+        color: #007bff;
+        border: 1px solid #007bff;
+    }
+
+    .btn-secondary:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+
+<script>
+    function skipSetup() {
+        if (confirm('Вы уверены, что хотите пропустить настройку профиля? Вы сможете заполнить эти данные позже в личном кабинете.')) {
+            window.location.href = "{{ url_for('dashboard') }}";
+        }
+    }
+</script>
+{% endblock %} 

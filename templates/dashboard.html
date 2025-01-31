@@ -1,0 +1,833 @@
+{% extends "base.html" %}
+
+{% block title %}Панель управления{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="welcome-section">
+        <h1>Добро пожаловать, {{ current_user.full_name }}!</h1>
+    </div>
+
+    <div class="projects-section">
+        <h2>Ваши проекты</h2>
+        <div class="search-panel">
+            <div class="search-controls">
+                <div class="search-input">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Поиск по названию проекта, заказчику, ИНН...">
+                </div>
+                <div class="create-project-form">
+                    <div class="input-wrapper">
+                        <input type="text" id="newProjectName" placeholder="Имя нового проекта">
+                    </div>
+                    <button onclick="createProject()" class="btn-create">
+                        <i class="fas fa-plus"></i> Создать проект
+                    </button>
+                </div>
+            </div>
+            <div class="filters">
+                <select id="filterDate">
+                    <option value="">Все даты</option>
+                    <option value="today">Сегодня</option>
+                    <option value="week">За неделю</option>
+                    <option value="month">За месяц</option>
+                    <option value="year">За год</option>
+                </select>
+                <select id="filterStatus">
+                    <option value="">Все статусы</option>
+                    <option value="active">В процессе</option>
+                    <option value="completed">Завершено</option>
+                </select>
+                <select id="filterClient">
+                    <option value="">Все заказчики</option>
+                    <option value="individual">Физ. лица</option>
+                    <option value="legal">Юр. лица</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="projects-stats">
+            <div class="stat-item">
+                <span class="stat-label">Всего проектов:</span>
+                <span class="stat-value" id="totalProjects">{{ projects|length }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Активных:</span>
+                <span class="stat-value" id="activeProjects">{{ projects|selectattr('status', 'equalto', 'active')|list|length }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Завершенных:</span>
+                <span class="stat-value" id="completedProjects">{{ projects|selectattr('status', 'equalto', 'completed')|list|length }}</span>
+            </div>
+        </div>
+
+        <div class="projects-grid">
+            {% for project in projects %}
+            <div class="project-card" 
+                 data-status="{{ project.status }}"
+                 data-client-type="{{ project.client_type }}"
+                 data-date="{{ project.created_at }}">
+                <div class="project-menu">
+                    <button class="menu-trigger" onclick="showProjectMenu(event, '{{ project.project_name }}')">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="menu-content" id="menu-{{ project.project_name }}">
+                        <a href="{{ url_for('edit_project', project_name=project.project_name) }}">
+                            <i class="fas fa-edit"></i> Редактировать
+                        </a>
+                        {% if project.status == 'active' %}
+                        <a href="#" onclick="changeProjectStatus('{{ project.project_name }}', 'completed')">
+                            <i class="fas fa-check-circle"></i> Завершить проект
+                        </a>
+                        {% else %}
+                        <a href="#" onclick="changeProjectStatus('{{ project.project_name }}', 'active')">
+                            <i class="fas fa-redo"></i> Возобновить проект
+                        </a>
+                        {% endif %}
+                        <a href="#" onclick="duplicateProject('{{ project.project_name }}')">
+                            <i class="fas fa-copy"></i> Дублировать
+                        </a>
+                        <a href="#" onclick="deleteProject('{{ project.project_name }}')">
+                            <i class="fas fa-trash"></i> Удалить
+                        </a>
+                    </div>
+                </div>
+                <div class="project-header">
+                    <h3>{{ project.display_name }}</h3>
+                    <span class="project-status {{ project.status }}">
+                        {{ 'В процессе' if project.status == 'active' else 'Завершено' }}
+                    </span>
+                </div>
+                <div class="project-info">
+                    <div class="info-row">
+                        <span class="info-item">
+                            <i class="far fa-calendar-alt"></i> 
+                            <span title="{{ project.created_at|format_date }}">
+                                Создан: {{ project.created_at|format_date }}
+                            </span>
+                        </span>
+                        <span class="info-item">
+                            <i class="far fa-clock"></i>
+                            {% if project.updated_at %}
+                                <span title="{{ project.updated_at|format_date }}">
+                                    Изменен: {{ project.updated_at|format_date }}
+                                </span>
+                            {% else %}
+                                <span class="empty-value">Не изменялся</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-item full-width">
+                            <i class="far fa-user"></i> 
+                            {% if project.client_type == 'individual' %}
+                                {% if project.client_name and project.client_name != 'None' %}
+                                    <span title="{{ project.client_name }}">{{ project.client_name }}</span>
+                                {% else %}
+                                    <span class="empty-value">ФИО не указано</span>
+                                {% endif %}
+                            {% else %}
+                                {% if project.company_name and project.company_name != 'None' %}
+                                    <span title="{{ project.company_name }}">
+                                        {{ project.company_name }}
+                                        {% if project.company_inn and project.company_inn != 'None' %}
+                                            <span class="company-inn">(ИНН: {{ project.company_inn }})</span>
+                                        {% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="empty-value">Организация не указана</span>
+                                {% endif %}
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-item">
+                            <i class="far fa-file-alt"></i> {{ project.objects_count }} объектов
+                        </span>
+                    </div>
+                </div>
+                <div class="project-actions">
+                    <button onclick="location.href='/project/{{ project.project_name }}'">
+                        Открыть
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .dashboard-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .welcome-section {
+        margin-bottom: 2rem;
+    }
+
+    .welcome-section h1 {
+        color: #333;
+        font-size: 2rem;
+    }
+
+    .projects-section {
+        margin-bottom: 3rem;
+    }
+
+    .projects-section h2 {
+        margin-bottom: 1.5rem;
+        color: #333;
+    }
+
+    .projects-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+        align-items: start;
+    }
+
+    .project-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        min-height: 250px;
+        margin-bottom: 0;
+    }
+
+    .project-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 2.5rem;
+        padding-right: 2rem;
+    }
+
+    .project-header h3 {
+        margin: 0;
+        color: #333;
+        font-size: 1.1rem;
+        line-height: 1.3;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .project-status {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        white-space: nowrap;
+    }
+
+    .project-status.active {
+        background-color: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .project-status.completed {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .project-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: auto;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: flex-start;
+        gap: 1rem;
+        font-size: 0.9rem;
+        color: #666;
+        flex-wrap: wrap;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 45%;
+        max-width: 100%;
+    }
+
+    .info-item i {
+        font-size: 0.9rem;
+        width: 16px;
+        text-align: center;
+        color: #888;
+    }
+
+    .info-item span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .info-item.full-width {
+        flex-basis: 100%;
+        max-width: 100%;
+    }
+
+    .info-item.full-width span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .project-actions {
+        margin-top: auto;
+        width: 100%;
+    }
+
+    .project-actions button {
+        width: 100%;
+        padding: 0.75rem;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .project-actions button:hover {
+        background-color: #0056b3;
+    }
+
+    .new-project-section {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .new-project-section h2 {
+        margin-bottom: 1.5rem;
+        color: #333;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #555;
+        font-weight: bold;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+
+    .btn-primary {
+        padding: 0.75rem 2rem;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+
+    .project-menu {
+        position: absolute;
+        top: 1rem;
+        right: 0.5rem;
+        z-index: 10;
+    }
+
+    .menu-trigger {
+        background: none;
+        border: none;
+        color: #666;
+        cursor: pointer;
+        padding: 0.5rem;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s;
+    }
+
+    .menu-trigger:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+        color: #007bff;
+    }
+
+    .menu-content {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: 100%;
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        z-index: 100;
+        min-width: 180px;
+        margin-top: 0.5rem;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .menu-content.active {
+        display: block;
+        animation: menuFadeIn 0.2s ease;
+    }
+
+    .menu-content a {
+        display: block;
+        padding: 0.75rem 1.25rem;
+        color: #333;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.95rem;
+    }
+
+    .menu-content a:hover {
+        background: #f0f7ff;
+        color: #007bff;
+    }
+
+    .menu-content a i {
+        width: 16px;
+        text-align: center;
+    }
+
+    @keyframes menuFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .menu-content a:not(:last-child) {
+        border-bottom: 1px solid #eee;
+    }
+
+    .menu-content a:last-child {
+        color: #dc3545;
+    }
+
+    .menu-content a:last-child:hover {
+        background: #fff5f5;
+        color: #dc3545;
+    }
+
+    .search-panel {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .search-controls {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        align-items: stretch;
+        background: white;
+    }
+
+    .search-input {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+        max-width: 400px;
+    }
+
+    .search-input i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #666;
+    }
+
+    .search-input input {
+        width: 100%;
+        padding: 0.6rem 1rem 0.6rem 2.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        background-color: white;
+        transition: border-color 0.2s;
+    }
+
+    .search-input input:hover {
+        border-color: #b0b0b0;
+    }
+
+    .search-input input:focus {
+        border-color: #007bff;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(0,123,255,0.1);
+    }
+
+    .create-project-form {
+        display: flex;
+        gap: 0.5rem;
+        margin-left: 4rem;
+        position: relative;
+    }
+
+    .create-project-form::after {
+        content: '';
+        width: 2rem;
+    }
+
+    .input-wrapper {
+        position: relative;
+        width: 300px;
+    }
+
+    .create-project-form input {
+        width: 100%;
+        padding: 0.6rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        background-color: white;
+        transition: border-color 0.2s;
+    }
+
+    .create-project-form input:hover {
+        border-color: #b0b0b0;
+    }
+
+    .create-project-form input:focus {
+        border-color: #28a745;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(40,167,69,0.1);
+    }
+
+    .btn-create {
+        padding: 0.6rem 1rem;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        width: 150px;
+        justify-content: center;
+        transition: background-color 0.2s;
+        margin-left: 2rem;
+    }
+
+    .btn-create:hover {
+        background-color: #218838;
+    }
+
+    .filters {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 0.75rem;
+    }
+
+    .filters select {
+        padding: 0.6rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: white;
+        min-width: 140px;
+        cursor: pointer;
+        transition: border-color 0.2s;
+    }
+
+    .filters select:hover {
+        border-color: #b0b0b0;
+    }
+
+    .filters select:focus {
+        border-color: #007bff;
+        outline: none;
+    }
+
+    .projects-stats {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .stat-item {
+        background: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #007bff;
+    }
+
+    .empty-value {
+        color: #999;
+        font-style: italic;
+    }
+
+    .company-inn {
+        color: #666;
+        font-size: 0.85em;
+        margin-left: 0.5rem;
+    }
+</style>
+
+<script>
+    function showProjectMenu(event, projectName) {
+        event.stopPropagation();
+        const menu = document.getElementById(`menu-${projectName}`);
+        
+        // Закрываем все открытые меню
+        document.querySelectorAll('.menu-content').forEach(m => {
+            if (m !== menu) m.classList.remove('active');
+        });
+        
+        menu.classList.toggle('active');
+    }
+
+    function duplicateProject(projectName) {
+        fetch(`/project/${projectName}/duplicate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Ошибка при дублировании проекта');
+            }
+        });
+    }
+
+    function deleteProject(projectName) {
+        if (confirm('Вы уверены, что хотите удалить этот проект? Это действие нельзя отменить.')) {
+            fetch(`/project/${projectName}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Ошибка при удалении проекта');
+                }
+            });
+        }
+    }
+
+    // Закрываем меню при клике вне его
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.project-menu')) {
+            document.querySelectorAll('.menu-content').forEach(menu => {
+                menu.classList.remove('active');
+            });
+        }
+    });
+
+    // Функция поиска и фильтрации
+    function filterProjects() {
+        const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+        const dateFilter = document.getElementById('filterDate').value;
+        const statusFilter = document.getElementById('filterStatus').value;
+        const clientFilter = document.getElementById('filterClient').value;
+        
+        const projects = document.querySelectorAll('.project-card');
+        let visibleCount = 0;
+        let activeCount = 0;
+        let completedCount = 0;
+        
+        projects.forEach(project => {
+            // Собираем все данные для поиска
+            const projectName = project.querySelector('.project-header h3').textContent.toLowerCase();
+            const clientInfo = project.querySelector('.info-item.full-width').textContent.toLowerCase();
+            const dates = Array.from(project.querySelectorAll('.info-item span')).map(span => span.textContent.toLowerCase()).join(' ');
+            const searchText = `${projectName} ${clientInfo} ${dates}`;
+            
+            let isVisible = true;
+            
+            // Поиск по всем данным
+            if (searchQuery && !searchText.includes(searchQuery)) {
+                isVisible = false;
+            }
+            
+            // Фильтр по дате
+            if (dateFilter) {
+                const projectDateTime = new Date(dates);
+                const now = new Date();
+                
+                switch(dateFilter) {
+                    case 'today':
+                        isVisible = isVisible && projectDateTime.toDateString() === now.toDateString();
+                        break;
+                    case 'week':
+                        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+                        isVisible = isVisible && projectDateTime >= weekAgo;
+                        break;
+                    case 'month':
+                        const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+                        isVisible = isVisible && projectDateTime >= monthAgo;
+                        break;
+                    case 'year':
+                        const yearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
+                        isVisible = isVisible && projectDateTime >= yearAgo;
+                        break;
+                }
+            }
+            
+            // Фильтр по статусу
+            if (statusFilter && project.dataset.status !== statusFilter) {
+                isVisible = false;
+            }
+            
+            // Фильтр по типу заказчика
+            if (clientFilter && project.dataset.clientType !== clientFilter) {
+                isVisible = false;
+            }
+            
+            project.style.display = isVisible ? 'block' : 'none';
+            if (isVisible) {
+                visibleCount++;
+                if (project.dataset.status === 'active') activeCount++;
+                if (project.dataset.status === 'completed') completedCount++;
+            }
+        });
+        
+        // Обновляем статистику
+        document.getElementById('totalProjects').textContent = visibleCount;
+        document.getElementById('activeProjects').textContent = activeCount;
+        document.getElementById('completedProjects').textContent = completedCount;
+    }
+
+    // Добавляем debounce для оптимизации поиска
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    const debouncedFilter = debounce(filterProjects, 300);
+
+    // Обновляем слушатель событий
+    document.getElementById('searchInput').addEventListener('input', debouncedFilter);
+    document.getElementById('filterDate').addEventListener('change', filterProjects);
+    document.getElementById('filterStatus').addEventListener('change', filterProjects);
+    document.getElementById('filterClient').addEventListener('change', filterProjects);
+
+    // Конвертация времени в локальный формат
+    document.querySelectorAll('.local-time').forEach(element => {
+        const timestamp = element.dataset.timestamp;
+        if (timestamp) {
+            const date = new Date(timestamp.replace(' ', 'T'));
+            element.textContent = date.toLocaleString();
+        }
+    });
+
+    function createProject() {
+        const projectName = document.getElementById('newProjectName').value.trim();
+        if (!projectName) {
+            alert('Введите имя проекта');
+            return;
+        }
+
+        fetch('/create_project', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `project_name=${encodeURIComponent(projectName)}`
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Ошибка при создании проекта');
+            }
+        });
+    }
+
+    // Добавляем обработчик Enter для поля создания проекта
+    document.getElementById('newProjectName').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            createProject();
+        }
+    });
+
+    function changeProjectStatus(projectName, newStatus) {
+        fetch(`/project/${projectName}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Ошибка при изменении статуса проекта');
+            }
+        });
+    }
+</script>
+{% endblock %} 

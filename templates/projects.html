@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Мои проекты{% endblock %}
+
+{% block content %}
+<div class="projects-container">
+    <div class="projects-header">
+        <h1>Мои проекты</h1>
+        <button class="btn-primary" onclick="createProject()">
+            <i class="fas fa-plus"></i> Создать проект
+        </button>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Поиск проектов..." onkeyup="searchProjects()">
+        <select id="statusFilter" onchange="filterProjects()">
+            <option value="all">Все статусы</option>
+            <option value="active">В процессе</option>
+            <option value="completed">Завершено</option>
+        </select>
+    </div>
+
+    <div class="projects-grid">
+        {% for project in projects %}
+        <div class="project-card" data-status="{{ project.status }}">
+            <div class="project-status {{ project.status }}">
+                {{ 'В процессе' if project.status == 'active' else 'Завершено' }}
+            </div>
+            <h3>{{ project.display_name }}</h3>
+            <div class="project-info">
+                <p><i class="far fa-calendar-alt"></i> {{ project.created_at }}</p>
+                <p><i class="far fa-file-alt"></i> {{ project.objects_count }} объектов</p>
+            </div>
+            <div class="project-actions">
+                <button class="btn-view" onclick="viewProject('{{ project.project_name }}')">
+                    Просмотреть
+                </button>
+                <button class="btn-menu" onclick="showProjectMenu(this, '{{ project.project_name }}')">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="project-menu" id="projectMenu">
+    <div class="menu-item" onclick="editProject(selectedProject)">
+        <i class="fas fa-edit"></i> Редактировать
+    </div>
+    <div class="menu-item" onclick="duplicateProject(selectedProject)">
+        <i class="fas fa-copy"></i> Дублировать
+    </div>
+    <div class="menu-item delete" onclick="deleteProject(selectedProject)">
+        <i class="fas fa-trash-alt"></i> Удалить
+    </div>
+</div>
+
+<style>
+    .projects-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .projects-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .search-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .search-bar input,
+    .search-bar select {
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+
+    .search-bar input {
+        flex: 1;
+    }
+
+    .projects-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .project-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        position: relative;
+    }
+
+    .project-status {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+    }
+
+    .project-status.active {
+        background-color: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .project-status.completed {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .project-info {
+        margin: 1rem 0;
+        color: #666;
+    }
+
+    .project-info p {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0.5rem 0;
+    }
+
+    .project-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .btn-view {
+        flex: 1;
+        padding: 0.5rem;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .btn-menu {
+        padding: 0.5rem;
+        background: none;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .project-menu {
+        display: none;
+        position: absolute;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        z-index: 1000;
+    }
+
+    .menu-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .menu-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .menu-item.delete {
+        color: #dc3545;
+    }
+</style>
+
+<script>
+    let selectedProject = null;
+    const projectMenu = document.getElementById('projectMenu');
+
+    function createProject() {
+        window.location.href = "{{ url_for('create_project') }}";
+    }
+
+    function searchProjects() {
+        // Реализация поиска проектов
+    }
+
+    function filterProjects() {
+        // Реализация фильтрации по статусу
+    }
+
+    function viewProject(projectName) {
+        window.location.href = `/project/${projectName}`;
+    }
+
+    function showProjectMenu(button, projectName) {
+        selectedProject = projectName;
+        const rect = button.getBoundingClientRect();
+        projectMenu.style.display = 'block';
+        projectMenu.style.top = `${rect.bottom + window.scrollY}px`;
+        projectMenu.style.left = `${rect.left}px`;
+    }
+
+    // Закрыть меню при клике вне его
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.btn-menu') && !event.target.closest('.project-menu')) {
+            projectMenu.style.display = 'none';
+        }
+    });
+
+    function editProject(projectName) {
+        window.location.href = `/project/${projectName}/edit`;
+    }
+
+    function duplicateProject(projectName) {
+        fetch(`/project/${projectName}/duplicate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        }).then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Ошибка при дублировании проекта');
+            }
+        });
+    }
+
+    function deleteProject(projectName) {
+        if (confirm('Вы уверены, что хотите удалить этот проект?')) {
+            fetch(`/project/${projectName}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Ошибка при удалении проекта');
+                }
+            });
+        }
+    }
+</script>
+{% endblock %} 

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h2>Регистрация</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <form method="POST" action="{{ url_for('auth.register') }}" class="auth-form">
+        <div class="form-group">
+            <label for="full_name">ФИО:</label>
+            <input type="text" id="full_name" name="full_name" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="phone">Номер телефона:</label>
+            <input type="tel" id="phone" name="phone" pattern="[0-9+()-\s]*">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Пароль:</label>
+            <input type="password" id="password" name="password" required>
+            <small class="form-text">Минимум 8 символов, должен содержать буквы и цифры</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="confirm_password">Подтвердите пароль:</label>
+            <input type="password" id="confirm_password" name="confirm_password" required>
+        </div>
+        
+        <div class="form-check">
+            <input type="checkbox" id="terms" name="terms" required>
+            <label for="terms">
+                Я согласен с <a href="#" target="_blank">Политикой конфиденциальности</a> и
+                <a href="#" target="_blank">Пользовательским соглашением</a>
+            </label>
+        </div>
+        
+        <button type="submit" class="btn-submit">Зарегистрироваться</button>
+        
+        <div class="social-auth">
+            <p>Или войдите через:</p>
+            <div class="social-buttons">
+                <button type="button" class="btn-telegram" onclick="telegramAuth()">
+                    Telegram
+                </button>
+                <button type="button" class="btn-google" onclick="googleAuth()">
+                    Google
+                </button>
+            </div>
+        </div>
+    </form>
+    
+    <div class="auth-links">
+        <p>Уже есть аккаунт? <a href="{{ url_for('auth.login') }}">Войти</a></p>
+    </div>
+</div>
+
+<style>
+    .social-auth {
+        margin-top: 20px;
+        text-align: center;
+    }
+    
+    .social-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 10px;
+    }
+    
+    .btn-telegram, .btn-google {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.2s;
+    }
+    
+    .btn-telegram {
+        background-color: #0088cc;
+        color: white;
+    }
+    
+    .btn-google {
+        background-color: #db4437;
+        color: white;
+    }
+    
+    .form-check {
+        margin: 15px 0;
+    }
+    
+    .form-text {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 5px;
+    }
+</style>
+
+<script>
+    function telegramAuth() {
+        // Здесь будет код для авторизации через Telegram
+        alert('Авторизация через Telegram будет добавлена позже');
+    }
+    
+    function googleAuth() {
+        // Здесь будет код для авторизации через Google
+        alert('Авторизация через Google будет добавлена позже');
+    }
+</script>
+{% endblock %} 

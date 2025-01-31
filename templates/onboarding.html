@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Добро пожаловать{% endblock %}
+
+{% block content %}
+<div class="onboarding-container">
+    <div class="onboarding-steps">
+        <div class="step {% if step == 1 %}active{% endif %}" id="step1">
+            <div class="welcome-screen">
+                <h1>Добро пожаловать в систему!</h1>
+                <p class="welcome-text">
+                    Здесь вы сможете автоматизировать подготовку межевых и технических планов.
+                    Давайте настроим ваш личный кабинет для более эффективной работы.
+                </p>
+                <div class="features-list">
+                    <div class="feature">
+                        <i class="fas fa-file-alt"></i>
+                        <h3>Автоматизация документов</h3>
+                        <p>Быстрое создание межевых и технических планов</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-project-diagram"></i>
+                        <h3>Управление проектами</h3>
+                        <p>Удобная организация всех ваших проектов</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>Облачное хранение</h3>
+                        <p>Безопасное хранение всех данных</p>
+                    </div>
+                </div>
+                <div class="onboarding-buttons">
+                    <button class="btn-primary" onclick="nextStep()">Начать настройку</button>
+                    <button class="btn-secondary" onclick="skipOnboarding()">Пропустить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .onboarding-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        padding: 2rem;
+    }
+    
+    .welcome-screen {
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .welcome-text {
+        font-size: 1.2rem;
+        color: #666;
+        margin: 2rem 0;
+        line-height: 1.6;
+    }
+    
+    .features-list {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+        margin: 3rem 0;
+    }
+    
+    .feature {
+        padding: 1.5rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    
+    .feature:hover {
+        transform: translateY(-5px);
+    }
+    
+    .feature i {
+        font-size: 2.5rem;
+        color: #007bff;
+        margin-bottom: 1rem;
+    }
+    
+    .feature h3 {
+        margin-bottom: 1rem;
+        color: #333;
+    }
+    
+    .feature p {
+        color: #666;
+    }
+    
+    .onboarding-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .btn-primary, .btn-secondary {
+        padding: 0.75rem 2rem;
+        border-radius: 4px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+        border: none;
+    }
+    
+    .btn-secondary {
+        background-color: transparent;
+        color: #007bff;
+        border: 1px solid #007bff;
+    }
+</style>
+
+<script>
+    function nextStep() {
+        window.location.href = "{{ url_for('auth.setup_profile') }}";
+    }
+    
+    function skipOnboarding() {
+        window.location.href = "{{ url_for('dashboard') }}";
+    }
+</script>
+{% endblock %} 

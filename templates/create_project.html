@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Создание проекта{% endblock %}
+
+{% block content %}
+<div class="create-project-container">
+    <div class="form-header">
+        <h1>Создание нового проекта</h1>
+    </div>
+
+    <form method="POST" action="{{ url_for('create_project') }}" class="project-form">
+        <!-- Основная информация о проекте -->
+        <div class="form-section">
+            <h2>Основная информация</h2>
+            <div class="form-group">
+                <label for="project_name">Наименование проекта:</label>
+                <input type="text" id="project_name" name="project_name" required>
+            </div>
+        </div>
+
+        <!-- Информация о заказчике -->
+        <div class="form-section">
+            <h2>Сведения о заказчике</h2>
+            <div class="form-group">
+                <label>Тип заказчика:</label>
+                <div class="radio-group">
+                    <input type="radio" id="individual" name="client_type" value="individual" checked>
+                    <label for="individual">Физическое лицо</label>
+                    
+                    <input type="radio" id="legal" name="client_type" value="legal">
+                    <label for="legal">Юридическое лицо</label>
+                </div>
+            </div>
+
+            <!-- Поля для физического лица -->
+            <div id="individual-fields">
+                <div class="form-group">
+                    <label for="client_name">ФИО:</label>
+                    <input type="text" id="client_name" name="client_name">
+                </div>
+                <div class="form-group">
+                    <label for="client_passport">Паспортные данные:</label>
+                    <input type="text" id="client_passport" name="client_passport">
+                </div>
+            </div>
+
+            <!-- Поля для юридического лица -->
+            <div id="legal-fields" style="display: none;">
+                <div class="form-group">
+                    <label for="company_name">Название организации:</label>
+                    <input type="text" id="company_name" name="company_name">
+                </div>
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label for="company_inn">ИНН:</label>
+                        <input type="text" id="company_inn" name="company_inn">
+                    </div>
+                    <div class="form-group half">
+                        <label for="company_ogrn">ОГРН:</label>
+                        <input type="text" id="company_ogrn" name="company_ogrn">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Общие контактные данные -->
+            <div class="form-group">
+                <label for="client_phone">Телефон:</label>
+                <input type="tel" id="client_phone" name="client_phone" required>
+            </div>
+            <div class="form-group">
+                <label for="client_email">Email:</label>
+                <input type="email" id="client_email" name="client_email">
+            </div>
+            <div class="form-group">
+                <label for="client_address">Адрес:</label>
+                <textarea id="client_address" name="client_address" rows="2"></textarea>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">Создать проект</button>
+            <button type="button" class="btn-secondary" onclick="history.back()">Отмена</button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .create-project-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .form-header {
+        margin-bottom: 2rem;
+    }
+
+    .form-section {
+        background: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .form-section h2 {
+        color: #333;
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .form-group.half {
+        flex: 1;
+    }
+
+    .radio-group {
+        display: flex;
+        gap: 2rem;
+        margin: 0.5rem 0;
+    }
+
+    .radio-group input[type="radio"] {
+        margin-right: 0.5rem;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+        color: #555;
+    }
+
+    input[type="text"],
+    input[type="tel"],
+    input[type="email"],
+    textarea {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+
+    textarea {
+        resize: vertical;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        padding: 0.75rem 2rem;
+        border-radius: 4px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+
+    .btn-secondary {
+        background-color: transparent;
+        color: #007bff;
+        border: 1px solid #007bff;
+    }
+
+    .btn-secondary:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+
+<script>
+    // Переключение полей в зависимости от типа заказчика
+    document.querySelectorAll('input[name="client_type"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const individualFields = document.getElementById('individual-fields');
+            const legalFields = document.getElementById('legal-fields');
+            
+            if (this.value === 'individual') {
+                individualFields.style.display = 'block';
+                legalFields.style.display = 'none';
+            } else {
+                individualFields.style.display = 'none';
+                legalFields.style.display = 'block';
+            }
+        });
+    });
+
+    // Валидация формы перед отправкой
+    document.querySelector('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Здесь можно добавить дополнительную валидацию
+        
+        this.submit();
+    });
+</script>
+{% endblock %} 
